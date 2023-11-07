@@ -1,30 +1,69 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div ref="element" style="width: 100%; height: 75vh">
+    <teleport
+      v-for="{ id, type, element } in componentInstances"
+      :key="id"
+      :to="element">
+      <component :is="type"></component>
+    </teleport>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
+<script lang="ts">
+import { useGoldenLayout } from '../composables/useGoldenLayout';
+import { defineComponent, h, shallowRef } from 'vue';
+import 'golden-layout/dist/css/goldenlayout-base.css';
+import 'golden-layout/dist/css/themes/goldenlayout-dark-theme.css';
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>
+const Test = defineComponent({ render: () => h('span', 'It works!') });
+
+const components = { Test /* other components */ };
+
+export default defineComponent({
+  components,
+  setup() {
+    interface ComponentInstance {
+      id: number;
+      type: string;
+      element: HTMLElement;
+    }
+    let instanceId = 0;
+    const componentTypes = new Set(Object.keys(components));
+    const componentInstances = shallowRef<ComponentInstance[]>([]);
+
+    const createComponent = (type: string, element: HTMLElement) => {
+      if (!componentTypes.has(type)) {
+        throw new Error(`Component not found: '${type}'`);
+      }
+      ++instanceId;
+      componentInstances.value = componentInstances.value.concat({
+        id: instanceId,
+        type,
+        element,
+      });
+    };
+    const destroyComponent = (toBeRemoved: HTMLElement) => {
+      componentInstances.value = componentInstances.value.filter(
+        ({ element }) => element !== toBeRemoved
+      );
+    };
+
+    const { element } = useGoldenLayout(createComponent, destroyComponent, {
+      root: {
+        type: 'column',
+        content: [
+          {
+            type: 'component',
+            componentType: 'Test',
+          },
+          {
+            type: 'component',
+            componentType: 'Test',
+          },
+        ],
+      },
+    });
+
+    return { element, componentInstances };
+  },
+});
+</script>
