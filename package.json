@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "golden-layout": "^2.6.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {
